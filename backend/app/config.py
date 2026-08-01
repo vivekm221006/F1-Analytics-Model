@@ -1,13 +1,22 @@
 import os
 from pathlib import Path
 
-# Paths to data on G: drive
-G_DRIVE_BASE = Path(r"G:\PROJECTS\F1 BACKEND\F1 PROJECT")
+# Use environment variable DATA_DIR if set (for cloud deployment),
+# otherwise fall back to the bundled data/ directory
+_base = os.environ.get("DATA_DIR")
+if _base:
+    DATA_BASE = Path(_base)
+else:
+    DATA_BASE = Path(__file__).resolve().parent.parent / "data"
 
-MODEL_PATH = G_DRIVE_BASE / "models"
-FEATURE_PATH = G_DRIVE_BASE / "data" / "features"
-SIM_PATH = G_DRIVE_BASE / "simulation"
-REPORT_PATH = G_DRIVE_BASE / "reports"
+MODEL_PATH = DATA_BASE / "models"
+FEATURE_PATH = DATA_BASE / "features"
+SIM_PATH = DATA_BASE / "simulation"
+REPORT_PATH = DATA_BASE / "reports"
 
-# Global Config
-CORS_ORIGINS = ["http://localhost:3000"]
+# CORS — allow Vercel frontend + localhost dev
+CORS_ORIGINS = [
+    "http://localhost:3000",
+    os.environ.get("FRONTEND_URL", ""),
+    "*",  # Render will handle this
+]
