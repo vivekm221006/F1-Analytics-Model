@@ -24,6 +24,7 @@ export default function LapPredictorPage() {
   const [tyreAge, setTyreAge] = useState(15);
   const [traffic, setTraffic] = useState("Clean Air (top 5)");
   const [pitThisLap, setPitThisLap] = useState("No");
+  const [tyreCompound, setTyreCompound] = useState("Medium  (Yellow)");
   
   const [isExpanderOpen, setIsExpanderOpen] = useState(false);
 
@@ -75,29 +76,30 @@ export default function LapPredictorPage() {
   const handlePredict = async () => {
     setLoading(true);
     try {
+      const constructorId = gridData && team && gridData[team] ? gridData[team].id : 0;
       const res = await api.predictLap({
         year: season,
         circuit_id: parseInt(circuitId),
+        constructor_id: constructorId,
         driver_name: driver,
-        team_name: team,
-        lap_number: lap,
+        lap_num: lap,
         position,
-        grid_position: gridPosition,
-        qualifying_position: qualifyingPosition,
+        grid_pos: gridPosition,
+        quali_pos: qualifyingPosition,
         tyre_age: tyreAge,
-        is_traffic: traffic.includes("Traffic"),
-        is_pit_lap: pitThisLap === "Yes"
+        traffic: traffic.includes("Traffic") ? 1 : 0,
+        made_pit: pitThisLap === "Yes" ? 1 : 0
       });
       const gridRes = await api.predictLapGrid({
         year: season,
         circuit_id: parseInt(circuitId),
-        lap_number: lap,
+        lap_num: lap,
         position,
-        grid_position: gridPosition,
-        qualifying_position: qualifyingPosition,
+        grid_pos: gridPosition,
+        quali_pos: qualifyingPosition,
         tyre_age: tyreAge,
-        is_traffic: traffic.includes("Traffic"),
-        is_pit_lap: pitThisLap === "Yes"
+        traffic: traffic.includes("Traffic") ? 1 : 0,
+        made_pit: pitThisLap === "Yes" ? 1 : 0
       });
       setPrediction({ ...res, grid_comparison: gridRes });
     } catch (e) {
@@ -212,6 +214,29 @@ export default function LapPredictorPage() {
                   <option value="No">No</option>
                   <option value="Yes">Yes</option>
                 </select>
+              </div>
+              <div>
+                <label className="mb-2 block text-xs text-ink-mid">Tyre Compound</label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { id: "Soft  (Red)", label: "SOFT", icon: "🔴" },
+                    { id: "Medium  (Yellow)", label: "MEDIUM", icon: "🟡" },
+                    { id: "Hard  (White)", label: "HARD", icon: "⚪" },
+                    { id: "Intermediate  (Green)", label: "INTER", icon: "🟢" },
+                    { id: "Wet  (Blue)", label: "WET", icon: "🔵" },
+                  ].map(c => (
+                    <button
+                      key={c.id}
+                      onClick={() => setTyreCompound(c.id)}
+                      className={clsx(
+                        "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-mono transition-colors",
+                        tyreCompound === c.id ? "border-ink-hi text-ink-hi bg-white/5" : "border-line text-ink-mid hover:border-line-strong"
+                      )}
+                    >
+                      <span>{c.icon}</span>{c.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="border border-line rounded-lg overflow-hidden">

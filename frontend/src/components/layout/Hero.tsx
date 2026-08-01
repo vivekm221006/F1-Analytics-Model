@@ -15,8 +15,8 @@ export function Hero() {
         </span>
       </div>
 
-      <h1 className="max-w-[1100px] text-[48px] font-bold leading-[0.96] tracking-[-0.03em] sm:text-[64px] md:text-[88px] lg:text-[108px]">
-        <span className="block overflow-hidden">
+      <h1 className="max-w-[1100px] text-[48px] font-bold leading-[1.1] tracking-[-0.03em] sm:text-[64px] md:text-[88px] lg:text-[108px]">
+        <span className="block overflow-hidden pb-2">
           <span
             id="headline-1"
             className="block translate-y-full"
@@ -24,7 +24,7 @@ export function Hero() {
             Race strategy,
           </span>
         </span>
-        <span className="block overflow-hidden">
+        <span className="block overflow-hidden pb-2">
           <span
             id="headline-2"
             className="block translate-y-full bg-gradient-to-r from-cyan via-[#5EEAD4] to-cyan bg-clip-text text-transparent"
