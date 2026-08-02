@@ -92,11 +92,25 @@ export default function PitAdvisorPage() {
       try {
         projection = await api.predictPitProjection(requestData);
       } catch { projection = null; }
-      setPrediction({
+      // Map backend field names to frontend expectations
+      const mappedRes = {
         ...res,
-        degradation_curve: projection?.degradation_curve || res.degradation_curve,
-        pit_probabilities: projection?.pit_probabilities || res.pit_probabilities,
-        compound_comparison: compComparison || res.compound_comparison || COMPOUNDS.map(c => ({
+        probability: res.prob ?? res.probability ?? 0,
+        life_remaining: res.life_remain ?? res.laps_remaining ?? res.life_remaining ?? 0,
+        pace_lost: res.pace_loss ?? res.pace_lost ?? 0,
+      };
+      // Map projection data
+      const mappedProjection = projection ? projection.map((p: any) => ({
+        lap: p.lap,
+        time: p.pace_loss ?? p.time ?? 0,
+        probability: p.prob ?? p.probability ?? 0,
+        urgency_color: p.urgency_color,
+      })) : null;
+      setPrediction({
+        ...mappedRes,
+        degradation_curve: mappedProjection || mappedRes.degradation_curve,
+        pit_probabilities: mappedProjection || mappedRes.pit_probabilities,
+        compound_comparison: compComparison || mappedRes.compound_comparison || COMPOUNDS.map(c => ({
           compound: c.label,
           icon: c.icon,
           life: `${c.min}-${c.max} laps`,
@@ -297,12 +311,39 @@ export default function PitAdvisorPage() {
               <div className="rounded-2xl border border-line bg-panel p-8 flex flex-col justify-center">
                 <div className="text-xs font-mono uppercase tracking-[0.2em] mb-4 text-ink-mid">Pit Probability Gauge</div>
                 <div className="flex items-end gap-2 mb-4">
-                  <div className="text-5xl font-bold tracking-tighter text-ink-hi">{(prediction.probability * 100).toFixed(1)}%</div>
+                  <div className="text-5xl font-bold tracking-tighter text-ink-hi">{((prediction.probability ?? 0) * 100).toFixed(1)}%</div>
                 </div>
                 <div className="h-2 w-full bg-line-strong rounded-full overflow-hidden mb-2">
-                  <div className="h-full bg-cyan" style={{ width: `${prediction.probability * 100}%` }} />
+                  <div className="h-full bg-cyan" style={{ width: `${(prediction.probability ?? 0) * 100}%` }} />
                 </div>
-                <div className="text-xs text-ink-mid">Higher probability indicates optimal timing within the pit window.</div>
+                <div className="text-xs text-ink-mid">XGBoost model probability based on 11 race-state features.</div>
+              </div>
+            </div>
+          )}
+
+          {prediction && (
+            <div className="rounded-2xl border border-line bg-panel p-6 animate-fade-in">
+              <h3 className="mb-4 text-sm font-semibold uppercase tracking-widest text-cyan">Factors Analyzed by ML Model</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {[
+                  { label: "Lap Number", value: currentLap, icon: "🏁" },
+                  { label: "Position", value: `P${position}`, icon: "📍" },
+                  { label: "Tyre Age", value: `${tyreAge} laps`, icon: "🔄" },
+                  { label: "Compound", value: selectedCompound.label, icon: selectedCompound.icon },
+                  { label: "Grid Position", value: `P${gridPosition}`, icon: "🏎️" },
+                  { label: "Quali Position", value: `P${qualifyingPosition}`, icon: "⏱️" },
+                  { label: "Traffic", value: traffic === "Yes" ? "In traffic" : "Clear air", icon: "🚦" },
+                  { label: "Overtook", value: overtookLastLap === "Yes" ? "Yes" : "No", icon: "↗️" },
+                  { label: "Team Factor", value: team.split(" ")[0], icon: "🏢" },
+                  { label: "Deg Rate", value: `${(prediction.deg_rate ?? 0.065).toFixed(3)}s/lap`, icon: "📉" },
+                  { label: "Pace Loss", value: `+${(prediction.pace_lost ?? 0).toFixed(2)}s`, icon: "⚡" },
+                  { label: "Combined Score", value: `${((prediction.combined_score ?? 0) * 100).toFixed(0)}%`, icon: "🎯" },
+                ].map(f => (
+                  <div key={f.label} className="rounded-lg border border-line/50 bg-panel-2 p-3">
+                    <div className="text-[10px] font-mono uppercase tracking-wider text-ink-lo mb-1">{f.icon} {f.label}</div>
+                    <div className="text-sm font-bold text-ink-hi font-mono">{f.value}</div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -311,11 +352,11 @@ export default function PitAdvisorPage() {
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
                 <div className="rounded-xl border border-line bg-panel p-5">
                   <div className="text-xs font-mono uppercase tracking-[0.2em] mb-2 text-ink-mid">Life Remaining</div>
-                  <div className="text-2xl font-bold text-ink-hi font-mono">{prediction.life_remaining} Laps</div>
+                  <div className="text-2xl font-bold text-ink-hi font-mono">{prediction.life_remaining ?? 0} Laps</div>
                 </div>
                 <div className="rounded-xl border border-line bg-panel p-5">
                   <div className="text-xs font-mono uppercase tracking-[0.2em] mb-2 text-ink-mid">Pace Lost to Deg</div>
-                  <div className="text-2xl font-bold text-ink-hi font-mono">+{prediction.pace_lost.toFixed(3)}s</div>
+                  <div className="text-2xl font-bold text-ink-hi font-mono">+{(prediction.pace_lost ?? 0).toFixed(3)}s</div>
                 </div>
              </div>
           )}

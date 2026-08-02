@@ -14,7 +14,7 @@ export function Nav() {
   return (
     <nav
       id="nav"
-      className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-7 md:px-12 opacity-0 -translate-y-4"
+      className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-5 md:px-12 opacity-0 -translate-y-4 bg-void/90 backdrop-blur-lg border-b border-line/30"
     >
       <Link href="/" className="flex items-center gap-2.5">
         <span

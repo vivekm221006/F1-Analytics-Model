@@ -106,20 +106,20 @@ export default function LapPredictorPage() {
       console.error(e);
       // Dummy fallback
       setPrediction({
-        predicted_seconds: basePace + 2.5,
+        predicted_lap_time: basePace + 2.5,
         formatted_time: `1:${(basePace - 60 + 2.5).toFixed(3)}`,
-        delta_to_baseline: 2.5,
+        delta_vs_baseline: 2.5,
         baseline_pace: basePace,
         tyre_deg_loss: tyreAge * 0.1,
         shap_values: [
-          { feature: "Tyre Age", value: tyreAge, impact: 1.2 },
-          { feature: "Fuel Load", value: 45, impact: 0.8 },
-          { feature: "Traffic", value: traffic.includes("Traffic") ? 1 : 0, impact: traffic.includes("Traffic") ? 1.5 : 0 },
+          { feature: "tyre_age", label: "Tyre Age", value: 1.2 },
+          { feature: "traffic", label: "Traffic", value: traffic.includes("Traffic") ? 1.5 : 0 },
+          { feature: "position", label: "Position", value: -0.3 },
         ],
         grid_comparison: [
-          { rank: 1, driver: driver, team: team, pred: basePace + 2.5, delta: 0 },
-          { rank: 2, driver: "Rival 1", team: "Rival Team", pred: basePace + 3.0, delta: 0.5 },
-          { rank: 3, driver: "Rival 2", team: "Rival Team 2", pred: basePace + 3.5, delta: 1.0 },
+          { rank: 1, driver: driver, team: team, predicted_lap_time: basePace + 2.5, delta: 0 },
+          { rank: 2, driver: "Rival 1", team: "Rival Team", predicted_lap_time: basePace + 3.0, delta: 0.5 },
+          { rank: 3, driver: "Rival 2", team: "Rival Team 2", predicted_lap_time: basePace + 3.5, delta: 1.0 },
         ]
       });
     }
@@ -278,7 +278,7 @@ export default function LapPredictorPage() {
                   <h3 className="mb-2 text-sm font-medium uppercase tracking-widest text-ink-mid">{driver} · {team}</h3>
                   <div className={clsx(
                     "font-mono text-5xl md:text-7xl font-bold tracking-tighter",
-                    prediction.delta_to_baseline < 0 ? "text-[#39d353]" : prediction.delta_to_baseline > 2 ? "text-[#ff2d55]" : "text-[#ff8700]"
+                    (prediction.delta_vs_baseline ?? 0) < 0 ? "text-[#39d353]" : (prediction.delta_vs_baseline ?? 0) > 2 ? "text-[#ff2d55]" : "text-[#ff8700]"
                   )}>
                     {prediction.formatted_time}
                   </div>
@@ -292,15 +292,15 @@ export default function LapPredictorPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="rounded-xl border border-line bg-panel p-5">
                   <div className="text-xs font-mono uppercase tracking-[0.2em] mb-2 text-ink-mid">Delta vs Baseline</div>
-                  <div className="text-2xl font-bold text-ink-hi font-mono">{prediction.delta_to_baseline > 0 ? "+" : ""}{prediction.delta_to_baseline.toFixed(3)}s</div>
+                  <div className="text-2xl font-bold text-ink-hi font-mono">{(prediction.delta_vs_baseline ?? 0) > 0 ? "+" : ""}{(prediction.delta_vs_baseline ?? 0).toFixed(3)}s</div>
                 </div>
                 <div className="rounded-xl border border-line bg-panel p-5">
                   <div className="text-xs font-mono uppercase tracking-[0.2em] mb-2 text-ink-mid">Baseline Pace</div>
-                  <div className="text-2xl font-bold text-ink-hi font-mono">{prediction.baseline_pace.toFixed(3)}s</div>
+                  <div className="text-2xl font-bold text-ink-hi font-mono">{(prediction.baseline_pace ?? 0).toFixed(3)}s</div>
                 </div>
                 <div className="rounded-xl border border-line bg-panel p-5">
                   <div className="text-xs font-mono uppercase tracking-[0.2em] mb-2 text-ink-mid">Tyre Deg Loss</div>
-                  <div className="text-2xl font-bold text-ink-hi font-mono">+{prediction.tyre_deg_loss.toFixed(3)}s</div>
+                  <div className="text-2xl font-bold text-ink-hi font-mono">+{(prediction.tyre_deg_loss ?? 0).toFixed(3)}s</div>
                 </div>
               </div>
 
@@ -321,13 +321,13 @@ export default function LapPredictorPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-line/50">
-                        {prediction.grid_comparison.map((s: any) => (
+                        {prediction.grid_comparison.map((s: any, idx: number) => (
                           <tr key={s.driver} className={clsx("hover:bg-white/[0.02] transition-colors", s.driver === driver ? "bg-[#ff2d55]/10" : "")}>
-                            <td className="p-3 font-mono text-ink-hi">{s.rank}</td>
+                            <td className="p-3 font-mono text-ink-hi">{s.rank ?? idx + 1}</td>
                             <td className="p-3 font-medium text-ink-hi">{s.driver}</td>
                             <td className="p-3 text-ink-mid">{s.team}</td>
-                            <td className="p-3 text-right font-mono text-ink-hi">{s.pred.toFixed(3)}</td>
-                            <td className="p-3 text-right font-mono text-ink-mid">+{s.delta.toFixed(3)}</td>
+                            <td className="p-3 text-right font-mono text-ink-hi">{(s.predicted_lap_time ?? s.pred ?? 0).toFixed(3)}</td>
+                            <td className="p-3 text-right font-mono text-ink-mid">+{(s.delta ?? ((s.predicted_lap_time ?? 0) - (prediction.grid_comparison[0]?.predicted_lap_time ?? 0))).toFixed(3)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -343,11 +343,11 @@ export default function LapPredictorPage() {
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={prediction.shap_values} layout="vertical" margin={{ left: 80, right: 20 }}>
                         <XAxis type="number" stroke="#5B6270" fontSize={12} tickFormatter={(val) => val.toFixed(2)} />
-                        <YAxis dataKey="feature" type="category" stroke="#9298A6" fontSize={12} width={100} />
+                    <YAxis dataKey="label" type="category" stroke="#9298A6" fontSize={12} width={120} />
                         <Tooltip contentStyle={{ backgroundColor: '#0B0E16', border: '1px solid rgba(255,255,255,0.14)' }} cursor={{fill: 'rgba(255,255,255,0.05)'}} />
-                        <Bar dataKey="impact" radius={[0, 4, 4, 0]}>
+                        <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                           {prediction.shap_values.map((entry: any, index: number) => (
-                            <Cell key={`cell-${index}`} fill={entry.impact > 0 ? '#FF2D55' : '#39d353'} />
+                            <Cell key={`cell-${index}`} fill={entry.value > 0 ? '#FF2D55' : '#39d353'} />
                           ))}
                         </Bar>
                       </BarChart>
